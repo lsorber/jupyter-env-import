@@ -1,13 +1,16 @@
-def find_root():
+def find_env_root():
+    """Recursively search for `environment.yml`."""
     import os
-    roots = ['.', '..']
-    for root in roots:
+    root = '.'
+    for i in range(4):
         if os.path.isfile(os.path.join(root, 'environment.yml')):
             return root
-    return None
+        root = os.path.join(root, '..')
+    raise IOError('Could not find `environment.yml`.')
 
 
 def import_stdlibs():
+    """Import common standard library packages."""
     import importlib
     libs = [
         'collections',
@@ -21,6 +24,7 @@ def import_stdlibs():
         'logging',
         'math',
         'os',
+        'random',
         're',
         'shutil',
         'subprocess',
@@ -35,7 +39,10 @@ def import_stdlibs():
 
 
 def import_condalibs():
-    import importlib, os, re
+    """Import packages listed in `environment.yml`."""
+    import importlib
+    import os
+    import re
     dependency_exceptions = {
         'pandas': 'numpy',  # Recommended: numexpr, bottleneck
         'scikit-learn': ('numpy', 'scipy'),
@@ -51,7 +58,7 @@ def import_condalibs():
         'xgboost': 'xgb'
     }
     # Read `environment.yml`.
-    root = find_root()
+    root = find_env_root()
     with open(os.path.join(root, 'environment.yml')) as f:
         env = '\n'.join(f.readlines())
     # Extract all conda packages from the environment file.
@@ -82,12 +89,21 @@ def import_condalibs():
         except:
             pass
         # Import extras.
+        if mod == 'line_profiler':
+            from IPython import get_ipython
+            get_ipython().run_line_magic('load_ext', 'line_profiler')
+        if mod == 'memory_profiler':
+            from IPython import get_ipython
+            get_ipython().run_line_magic('load_ext', 'memory_profiler')
         if mod == 'pandas':
-            pd.options.display.max_columns = 100
-            pd.options.display.max_rows = 100
+            # It should be up to the user to limit the DataFrame output.
+            pd = globals()['pd']
+            pd.options.display.max_columns = 500
+            pd.options.display.max_rows = 500
         if mod == 'matplotlib':
             globals()['plt'] = importlib.import_module('matplotlib.pyplot')
             # Use a better default style.
+            plt = globals()['plt']
             plt.style.use('seaborn-whitegrid')
             # Inline and retina-quality plots.
             from IPython import get_ipython
@@ -108,12 +124,16 @@ def import_condalibs():
             globals()['py'] = importlib.import_module('plotly.offline')
             globals()['go'] = importlib.import_module('plotly.graph_objs')
             globals()['tls'] = importlib.import_module('plotly.tools')
+            py = globals()['py']
             py.init_notebook_mode(connected=False)
 
 
 def import_locallibs():
-    import importlib, os, sys
-    root = find_root()
+    """Import local packages."""
+    import importlib
+    import os
+    import sys
+    root = find_env_root()
     toplevels = [
         root,
         os.path.join(root, 'src'),
@@ -128,11 +148,13 @@ def import_locallibs():
 
 
 def display_all_variables():
+    """Display all evaluated variables in a cell."""
     from IPython.core.interactiveshell import InteractiveShell
     InteractiveShell.ast_node_interactivity = 'all'
 
 
 def autoreload_modules():
+    """Enable autoreloading."""
     from IPython import get_ipython
     get_ipython().run_line_magic('load_ext', 'autoreload')
     get_ipython().run_line_magic('autoreload', '2')
