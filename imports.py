@@ -24,6 +24,7 @@ def import_stdlibs():
         'logging',
         'math',
         'os',
+        'platform',
         'random',
         're',
         'shutil',
@@ -55,6 +56,7 @@ def import_condalibs():
         'py-xgboost': ('xgb', 'xgboost'),
         'scikit-learn': ('sklearn', 'sklearn'),
         'seaborn': 'sns',
+        'tensorflow': 'tf',
         'xgboost': 'xgb'
     }
     # Read `environment.yml`.
